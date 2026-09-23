@@ -1,80 +1,107 @@
 # HomeNas Monitoring for Unraid
 
-Publieke broncode voor `homenas.dashboard` v0.1.9. De plugin biedt een
-configureerbare Temperatures-tegel en een Airflow-tegel met elf fan-RPMkanalen
-voor Unraid 7.3.2. Beide tegels lezen uitsluitend het plugin-JSON-endpoint;
-er is geen fanregeling, PWM-write of kernelmodule inbegrepen.
+HomeNas Monitoring is a monitoring-only Unraid plugin with configurable
+Temperatures and Airflow dashboard tiles. It displays values already exposed
+by Linux/Unraid; it does not add sensor drivers or control fans.
 
-## Inhoud
+## Installation
 
-- `metadata.env`: enige bron voor versie, releasetag, pakketnaam en download-URL's.
-- `source/homenas.dashboard/`: de runtimebestanden voor het Unraid-`.txz`-pakket.
-- `homenas.dashboard.plg.in`: template voor de installeerbare PLG.
-- `homenas.dashboard.plg`: door de release-build gegenereerde publieke PLG.
-- `build/package-manifest.txt`: expliciete lijst van toegestane pakketbestanden.
-- `build/`: controles, package-build, PLG-render en releaseverificatie.
-- `tests/`: lokale fixtures en regressietests.
-- `dist/`: lokale buildoutput; het pakket en release-manifest worden door
-  `dist/.gitignore` uitgesloten van Git.
+The first publicly live-tested release is **v0.1.9**. Open the Unraid WebGUI,
+go to **Plugins → Install Plugin**, paste this public `.plg` URL, and install:
 
-## Functionaliteit
+```text
+https://github.com/heijer74/HomeNas-Unraid-Plugin/releases/download/homenas.dashboard-v0.1.9/homenas.dashboard.plg
+```
 
-De Settings-pagina biedt generieke labels voor bordtemperaturen, NVMe-sensoren
-en alle elf fanheaders. Case ΔT is optioneel en gebruikt configureerbare,
-verschillende intake- en exhaust-temperatuurbronnen. HomeNas-specifieke labels
-zijn niet in de pluginlogica vastgelegd.
+Unraid downloads the `.txz` package referenced by the PLG and verifies its
+package hash. After installation, open **Settings → User Utilities → HomeNas
+Monitoring** to configure sensor and fan labels and, optionally, Case ΔT.
+The Temperatures and Airflow tiles then appear on the Dashboard. The plugin
+does not require the old standalone dashboard-patch scripts.
 
-De Temperatures-tegel toont Chipset, Motherboard, VRM, T_Sensor, twee dynamisch
-gevonden NVMe-sensoren en EXT_Sensor1/2/3. Case ΔT verschijnt indien ingeschakeld.
-De Airflow-tegel groepeert CPU_FAN/CPU_OPT, CHA_FAN1/2/3/H_AMP,
-W_PUMP+/AIO_PUMP en EXT_FAN1/2/3. Ook 0 RPM blijft zichtbaar; ontbrekende
-metingen worden `N/A`. Beide tegels verversen iedere vijf seconden.
+## Features
 
-Dashboardadapters wijzigen alleen een bekende, gevalideerde Unraid 7.3.2-layout.
-Bij onbekende anchors of beschadigde markers stoppen ze zonder gedeeltelijke
-patch. De plugin levert per tegel alleen de Settings-cog; Unraid verzorgt de
-Show/Hide-chevron en Tile Management. Airflow-labels komen uit de eigen
-`settings.json`, niet uit Dynamix `sensors.conf`.
+- **Temperatures:** chipset, motherboard, VRM, T_Sensor, two dynamically
+  discovered NVMe sensors and EXT_Sensor1/2/3 when available. Display labels
+  are configurable.
+- **Case ΔT:** optional exhaust temperature minus intake temperature, using
+  two configurable temperature sources. It shows `N/A` when either source is
+  unavailable.
+- **Airflow:** stable slots for all eleven headers: CPU_FAN, CPU_OPT,
+  CHA_FAN1/2/3, H_AMP, W_PUMP+, AIO_PUMP and EXT_FAN1/2/3. A measured 0 RPM
+  stays visible as 0 RPM; a missing sensor shows `N/A`. Fan labels are
+  configurable independently of Dynamix `sensors.conf`.
+- Both tiles refresh every five seconds and retain Unraid tile controls and
+  Tile Management compatibility. Settings survive a reboot.
 
 ## Hardware support and kernel requirements
 
-De HomeNas Dashboard-plugin maakt zelf geen hardware-sensoren aan. Hij toont
-uitsluitend sensoren die Linux/Unraid al via hwmon en lm-sensors beschikbaar
-maakt. Ook zonder aangepaste driver blijft de plugin bruikbaar: beschikbare
-sensoren worden getoond en ontbrekende metingen verschijnen als unavailable
-of `N/A`.
+The plugin **does not create hwmon sensors**. It only displays measurements
+that Linux/Unraid already exposes through hwmon or lm-sensors. Missing
+measurements are unavailable or `N/A`; available sensors continue to work.
 
-Op de ASUS ROG Maximus XI Hero die voor de ontwikkeling is gebruikt, vereisen
-de Fan Extension Card-kanalen `EXT_FAN1`, `EXT_FAN2`, `EXT_FAN3`,
-`EXT_Sensor1`, `EXT_Sensor2` en `EXT_Sensor3` momenteel een aangepaste
-`asus_ec_sensors`-kernelmodule. Zonder die kernelondersteuning kunnen deze
-kanalen ontbreken of als unavailable / `N/A` verschijnen. Dit zegt niets over
-automatische ondersteuning van andere ASUS-borden.
+On the ASUS ROG Maximus XI Hero (Z390) used for development, the Fan Extension
+Card channels `EXT_FAN1`, `EXT_FAN2`, `EXT_FAN3`, `EXT_Sensor1`, `EXT_Sensor2`
+and `EXT_Sensor3` currently require a separate, customized `asus_ec_sensors`
+kernel module. That module is **not included** in this plugin because kernel
+modules must match the specific Unraid/Linux kernel version. Without it, the
+EXT channels may be unavailable, but the plugin remains useful for sensors
+that the kernel does expose. Support for other ASUS boards is not implied.
+The longer-term goal is to upstream Fan Extension Card support into Linux
+`asus_ec_sensors`.
 
-| Situatie | Plugin | Aangepaste kernelondersteuning | Resultaat |
+| System | Plugin | Custom kernel support | Expected result |
 | --- | --- | --- | --- |
-| Gewone Unraid-machine | Ja | Nee | Alleen reeds beschikbare sensoren |
-| Maximus XI Hero met Extension Card, zonder patch | Ja | Nee | EXT-kanalen mogelijk niet beschikbaar |
-| HomeNas-ontwikkelopstelling | Ja | Ja | EXT_FAN- en EXT_Sensor-kanalen beschikbaar |
+| Ordinary Unraid system | Yes | No | Displays sensors already exposed by Linux |
+| Maximus XI Hero with Extension Card, without the patch | Yes | No | EXT channels may be unavailable |
+| HomeNas development setup | Yes | Yes | EXT_FAN and EXT_Sensor channels available |
 
-De aangepaste module wordt niet met deze plugin meegeleverd: een kernelmodule
-moet bij de specifieke Unraid/Linux-kernelversie passen. Het langetermijndoel
-is ondersteuning voor de Fan Extension Card upstream in Linux
-`asus_ec_sensors` op te nemen.
+## Tested on
 
-## Canonieke v0.1.9-releasebuild
+- Unraid **7.3.2**, Linux **6.18.38-Unraid**.
+- ASUS ROG Maximus XI Hero (Z390) development/test board.
+- Plugin **v0.1.9**: public PLG download, Unraid package download and hash
+  verification, installation/upgrade, configuration persistence and reboot
+  were tested. Both dashboard adapters reported `active` after reboot.
 
-**v0.1.8 is NO-GO voor installatie.** De package werd gedownload, maar de
-PLG gebruikte XML-entiteiten binnen CDATA in de install- en remove-hooks.
-Die entiteiten worden daar niet geëxpandeerd, zodat de shell letterlijke
-`&name;`- en `&package;`-paden ontving. v0.1.9 rendert in beide hooks concrete,
-gevalideerde waarden en weigert release-PLG's met entiteiten in CDATA.
+Other Unraid versions have **not** been live-verified. The dashboard adapters
+are fail-closed: if an expected WebGUI layout is not recognized, they leave
+that dashboard page unchanged rather than applying a partial patch.
 
-Bouw een release uitsluitend op de Lenovo met Ubuntu/Linux en GNU tar. De
-build weigert AppleDouble-bestanden, `.DS_Store`, resource forks en extended
-attributes. macOS is geen ondersteunde release-buildomgeving.
+## Safety and persistence
 
-Voer vanuit de root van deze publieke repo op de Lenovo uit:
+This plugin is read-only monitoring software: it performs no fan control,
+PWM writes or EC/NCT control-register writes. Unavailable sensors show `N/A`
+rather than a fabricated temperature or RPM value. The plugin reads sensor
+data through its own JSON endpoint; dashboard tiles do not run `sensors`
+themselves.
+
+Settings are stored persistently on the Unraid flash drive at
+`/boot/config/plugins/homenas.dashboard/settings.json`. On the tested setup,
+the tiles and settings remained active after reboot. The old standalone
+dashboard-patch scripts are not needed for plugin-managed tiles.
+
+## Version status
+
+- **v0.1.9:** first public release live-tested for installation and reboot
+  persistence on the system listed above.
+- **v0.1.8: NO-GO — do not install.** Its PLG used XML entities inside CDATA
+  in the install/remove hooks. Those entities remained literal shell text,
+  causing installation to fail after the package download. v0.1.9 renders
+  concrete, validated hook values and checks both hooks during release builds.
+
+## Repository and release builds
+
+`metadata.env` is the version and release-URL source. `source/homenas.dashboard/`
+contains the packaged runtime, `homenas.dashboard.plg.in` is the PLG template,
+and the root `homenas.dashboard.plg` is the generated public installation
+file. `build/package-manifest.txt` lists every allowed package member;
+`tests/` contains fixtures and regression tests. Local packages and manifests
+under `dist/` are excluded from Git.
+
+Release packages must be built on Linux with GNU tar, not on macOS, to avoid
+AppleDouble files, resource forks and extended-attribute metadata. From a
+clean checkout on a Linux build machine with PHP, GJS, Python 3 and xmllint:
 
 ```bash
 bash -n build/*.sh tests/*.sh
@@ -88,36 +115,8 @@ bash build/build-release.sh
 bash build/inspect-package.sh "dist/$(sed -n 's/^PACKAGE_NAME=//p' metadata.env)"
 ```
 
-`build/build-release.sh` controleert eerst de staging tree tegen het manifest,
-bouwt daarna een timestamp-genormaliseerde `.txz`, inspecteert het archief,
-berekent de hashes en rendert de PLG. De publieke root-PLG en
-`dist/homenas.dashboard.plg` worden uit dezelfde template gegenereerd en
-moeten byte-identiek zijn. `build/verify-release.sh` controleert ook de
-pakketgrootte, SHA-256, URL's, PLG-XML en de concrete install-/remove-hooks.
-Daarvoor is Python 3 nodig.
-
-De v0.1.9-build produceert `dist/homenas.dashboard-0.1.9-x86_64-1.txz`,
-`dist/homenas.dashboard-release-manifest.json` en de twee identieke PLG's.
-`homenas.dashboard.plg` is het publieke installatiebestand; de package-URL
-verwijst naar de nog te publiceren tag `homenas.dashboard-v0.1.9` in
-[`heijer74/HomeNas-Unraid-Plugin`](https://github.com/heijer74/HomeNas-Unraid-Plugin).
-Een lokale build is geen publicatie of live installatie. Publiceer of installeer
-pas na afzonderlijke review van de artefacten.
-
-## Runtime en configuratie
-
-Unraid plaatst de runtime onder
-`/usr/local/emhttp/plugins/homenas.dashboard/`. De persistente configuratie
-staat onder `/boot/config/plugins/homenas.dashboard/settings.json`. Bij een
-ontbrekend bestand toont Settings de generieke defaults; de configuratie wordt
-pas na expliciet opslaan aangemaakt. Invoer wordt gevalideerd en atomair
-opgeslagen. Uninstall bewaart de configuratie.
-
-De sensorreader gebruikt read-only `sensors -j` en waar nodig read-only
-hwmon-/NVMe-identiteit. De plugin doet geen SMART-wakeup, directe EC-/SIO-
-of NCT-registertoegang, sysfs-writes of fan-control. De Settings-save gebruikt
-Unraids native CSRF-preflight; er is geen eigen PHP-session-token.
-
-De oude losse HomeNas-dashboard- en Airflow-scripts maken geen deel uit van
-deze publieke repo. Hun eventuele verwijdering van een bestaande Unraid-host
-is een afzonderlijke migratiestap, niet onderdeel van de pakketbuild.
+The build validates the staging tree, creates and inspects a normalized `.txz`,
+checks its hashes and size, and renders byte-identical root and `dist/` PLGs.
+It also checks that both shell hooks contain concrete values and no XML
+entities inside CDATA. The package and PLG are published together under the
+release tag specified in `metadata.env`.
