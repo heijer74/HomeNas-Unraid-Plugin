@@ -37,4 +37,6 @@ grep -Fxq "  \"package_size_bytes\": $ACTUAL_SIZE," "$MANIFEST" || fail 'manifes
 grep -Fq "<!ENTITY package_url \"$PACKAGE_URL\">" "$PLG" || fail 'PLG package URL komt niet overeen'
 grep -Fq "<SHA256>&sha256;</SHA256>" "$PLG" || fail 'PLG SHA-256 veld ontbreekt'
 xmllint --noout "$PLG" >/dev/null 2>&1 || fail 'ongeldige PLG XML'
+python3 "$SCRIPT_DIR/check-plg-hooks.py" "$PLG" "$PLUGIN_NAME" "$PACKAGE_NAME" "$SHA256" \
+    || fail 'ongeldige of niet-gerenderde PLG shell-hooks'
 printf 'release verification passed\n'

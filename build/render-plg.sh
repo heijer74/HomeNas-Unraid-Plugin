@@ -109,12 +109,18 @@ sed \
     -e "s|@PLUGIN_URL@|$PLUGIN_URL|g" \
     -e "s|@MD5@|$MD5|g" \
     -e "s|@SHA256@|$SHA256|g" \
+    -e "s|@HOOK_PLUGIN_NAME@|$PLUGIN_NAME|g" \
+    -e "s|@HOOK_PACKAGE_NAME@|$PACKAGE_NAME|g" \
+    -e "s|@HOOK_PACKAGE_BASENAME@|$PACKAGE_BASENAME|g" \
+    -e "s|@HOOK_SHA256@|$SHA256|g" \
     "$TEMPLATE" > "$TEMP_PLG"
 
 if grep -Fq '@' "$TEMP_PLG"; then
     fail 'onvervangen PLG placeholder'
 fi
 xmllint --noout "$TEMP_PLG" >/dev/null 2>&1 || fail 'ongeldige PLG XML'
+python3 "$SCRIPT_DIR/check-plg-hooks.py" "$TEMP_PLG" "$PLUGIN_NAME" "$PACKAGE_NAME" "$SHA256" \
+    || fail 'ongeldige of niet-gerenderde PLG shell-hooks'
 cp "$TEMP_PLG" "$TEMP_PUBLIC_PLG"
 
 printf '{\n  "plugin_version": "%s",\n  "release_tag": "%s",\n  "package_filename": "%s",\n  "package_size_bytes": %s,\n  "sha256": "%s"\n}\n' \

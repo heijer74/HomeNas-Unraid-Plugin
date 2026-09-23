@@ -44,6 +44,9 @@ public_plg="$FIXTURE_PLUGIN/homenas.dashboard.plg"
 manifest="$FIXTURE_PLUGIN/dist/homenas.dashboard-release-manifest.json"
 [ -s "$package" ] && [ -s "$plg" ] && [ -s "$manifest" ] || fail 'valid build artefacts ontbreken'
 cmp -s "$plg" "$public_plg" || fail 'publieke PLG wijkt af van gerenderde PLG'
+sha256=$(sha256sum "$package" | awk '{print $1}')
+python3 "$FIXTURE_PLUGIN/build/check-plg-hooks.py" "$plg" "$PLUGIN_NAME" "$PACKAGE_NAME" "$sha256" \
+    || fail 'install/remove hooks bevatten geen concrete releasewaarden'
 python3 - "$package" "$manifest" <<'PY' || fail 'manifest package_size_bytes is geen exact JSON-getal'
 import json
 import os
@@ -55,6 +58,30 @@ size = manifest.get("package_size_bytes")
 assert type(size) is int and size > 0
 assert size == os.stat(sys.argv[1]).st_size
 PY
+
+# Entity references in CDATA remain literal shell text. Both hooks must be
+# rejected even when the modified PLG is otherwise valid XML and matches the
+# public root copy.
+cp "$plg" "$WORK_DIR/valid.plg"
+awk '
+    /^package="\/boot\/config\/plugins\// { print "package=\"/boot/config/plugins/&name;/&package;\""; next }
+    /^expected_sha256=/ { print "expected_sha256=\"&sha256;\""; next }
+    { print }
+' "$WORK_DIR/valid.plg" > "$plg"
+cp "$plg" "$public_plg"
+expect_failure python3 "$FIXTURE_PLUGIN/build/check-plg-hooks.py" "$plg" "$PLUGIN_NAME" "$PACKAGE_NAME" "$sha256"
+expect_failure bash "$FIXTURE_PLUGIN/build/verify-release.sh"
+
+awk '
+    /^runtime="\/usr\/local\/emhttp\/plugins\// { print "runtime=\"/usr/local/emhttp/plugins/&name;\""; next }
+    /^removepkg / { print "removepkg \"&package_basename;\""; next }
+    { print }
+' "$WORK_DIR/valid.plg" > "$plg"
+cp "$plg" "$public_plg"
+expect_failure python3 "$FIXTURE_PLUGIN/build/check-plg-hooks.py" "$plg" "$PLUGIN_NAME" "$PACKAGE_NAME" "$sha256"
+expect_failure bash "$FIXTURE_PLUGIN/build/verify-release.sh"
+cp "$WORK_DIR/valid.plg" "$plg"
+cp "$plg" "$public_plg"
 
 sed -i.bak 's/"package_size_bytes": [0-9][0-9]*/"package_size_bytes": "invalid"/' "$manifest"
 rm -f "$manifest.bak"
@@ -96,5 +123,15 @@ expect_failure bash "$FIXTURE_PLUGIN/build/verify-release.sh"
 make_fixture
 printf '\nPLUGIN_NAME=duplicate\n' >> "$FIXTURE_PLUGIN/metadata.env"
 expect_failure bash "$FIXTURE_PLUGIN/build/render-plg.sh"
+
+make_fixture
+(cd "$FIXTURE_PLUGIN" && bash build/build-txz.sh)
+awk '
+    /^package="\/boot\/config\/plugins\// { print "package=\"/boot/config/plugins/&name;/&package;\""; next }
+    { print }
+' "$FIXTURE_PLUGIN/homenas.dashboard.plg.in" > "$WORK_DIR/invalid-template.plg.in"
+cp "$WORK_DIR/invalid-template.plg.in" "$FIXTURE_PLUGIN/homenas.dashboard.plg.in"
+expect_failure bash "$FIXTURE_PLUGIN/build/render-plg.sh"
+[ ! -e "$FIXTURE_PLUGIN/dist/homenas.dashboard.plg" ] || fail 'ongeldige CDATA-template leverde toch een release-PLG op'
 
 printf 'PASS release build fixtures\n'

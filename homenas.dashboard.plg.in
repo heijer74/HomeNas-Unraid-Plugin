@@ -25,25 +25,25 @@
   <FILE Run="/bin/bash">
     <INLINE><![CDATA[
 set -euo pipefail
-package="/boot/config/plugins/&name;/&package;"
-expected_sha256="&sha256;"
+package="/boot/config/plugins/@HOOK_PLUGIN_NAME@/@HOOK_PACKAGE_NAME@"
+expected_sha256="@HOOK_SHA256@"
 actual_sha256=$(sha256sum "$package" | awk '{print $1}')
 if [[ "$actual_sha256" != "$expected_sha256" ]]; then
     echo "homenas.dashboard: SHA-256 verification failed" >&2
     exit 1
 fi
 upgradepkg --install-new --reinstall "$package"
-/usr/local/emhttp/plugins/&name;/scripts/install
+/usr/local/emhttp/plugins/@HOOK_PLUGIN_NAME@/scripts/install
 ]]></INLINE>
   </FILE>
   <FILE Run="/bin/bash" Method="remove">
     <INLINE><![CDATA[
 set -euo pipefail
-runtime="/usr/local/emhttp/plugins/&name;"
+runtime="/usr/local/emhttp/plugins/@HOOK_PLUGIN_NAME@"
 if [[ -x "$runtime/scripts/remove" ]]; then
     "$runtime/scripts/remove"
 fi
-removepkg "&package_basename;"
+removepkg "@HOOK_PACKAGE_BASENAME@"
 ]]></INLINE>
   </FILE>
 </PLUGIN>

@@ -1,6 +1,6 @@
 # HomeNas Monitoring for Unraid
 
-Publieke broncode voor `homenas.dashboard` v0.1.8. De plugin biedt een
+Publieke broncode voor `homenas.dashboard` v0.1.9. De plugin biedt een
 configureerbare Temperatures-tegel en een Airflow-tegel met elf fan-RPMkanalen
 voor Unraid 7.3.2. Beide tegels lezen uitsluitend het plugin-JSON-endpoint;
 er is geen fanregeling, PWM-write of kernelmodule inbegrepen.
@@ -62,7 +62,13 @@ moet bij de specifieke Unraid/Linux-kernelversie passen. Het langetermijndoel
 is ondersteuning voor de Fan Extension Card upstream in Linux
 `asus_ec_sensors` op te nemen.
 
-## Canonieke v0.1.8-releasebuild
+## Canonieke v0.1.9-releasebuild
+
+**v0.1.8 is NO-GO voor installatie.** De package werd gedownload, maar de
+PLG gebruikte XML-entiteiten binnen CDATA in de install- en remove-hooks.
+Die entiteiten worden daar niet geëxpandeerd, zodat de shell letterlijke
+`&name;`- en `&package;`-paden ontving. v0.1.9 rendert in beide hooks concrete,
+gevalideerde waarden en weigert release-PLG's met entiteiten in CDATA.
 
 Bouw een release uitsluitend op de Lenovo met Ubuntu/Linux en GNU tar. De
 build weigert AppleDouble-bestanden, `.DS_Store`, resource forks en extended
@@ -87,12 +93,13 @@ bouwt daarna een timestamp-genormaliseerde `.txz`, inspecteert het archief,
 berekent de hashes en rendert de PLG. De publieke root-PLG en
 `dist/homenas.dashboard.plg` worden uit dezelfde template gegenereerd en
 moeten byte-identiek zijn. `build/verify-release.sh` controleert ook de
-pakketgrootte, SHA-256, URL's en PLG-XML.
+pakketgrootte, SHA-256, URL's, PLG-XML en de concrete install-/remove-hooks.
+Daarvoor is Python 3 nodig.
 
-De v0.1.8-build produceert `dist/homenas.dashboard-0.1.8-x86_64-1.txz`,
+De v0.1.9-build produceert `dist/homenas.dashboard-0.1.9-x86_64-1.txz`,
 `dist/homenas.dashboard-release-manifest.json` en de twee identieke PLG's.
 `homenas.dashboard.plg` is het publieke installatiebestand; de package-URL
-verwijst naar de nog te publiceren tag `homenas.dashboard-v0.1.8` in
+verwijst naar de nog te publiceren tag `homenas.dashboard-v0.1.9` in
 [`heijer74/HomeNas-Unraid-Plugin`](https://github.com/heijer74/HomeNas-Unraid-Plugin).
 Een lokale build is geen publicatie of live installatie. Publiceer of installeer
 pas na afzonderlijke review van de artefacten.

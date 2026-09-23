@@ -33,6 +33,10 @@ without installing Node or another package.
 on the canonical GNU-tar Linux environment checks a valid release render plus rejected package tampering, missing package,
 version mismatch, empty SHA-256 entity and duplicate metadata. It neither
 publishes nor installs an artifact.
+The PLG-hook check extracts both CDATA blocks, validates concrete package,
+hash and runtime values, and rejects XML entities or unresolved placeholders
+inside either shell hook. Negative fixtures cover both install and remove,
+including an otherwise valid XML PLG and an invalid source template.
 The valid build also checks that `package_size_bytes` is a positive JSON
 integer equal to the package size. A mocked `stat` returning filesystem text
 must stop rendering without creating a manifest.

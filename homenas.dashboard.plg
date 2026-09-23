@@ -2,12 +2,12 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name "homenas.dashboard">
 <!ENTITY author "HomeNas">
-<!ENTITY version "0.1.8">
+<!ENTITY version "0.1.9">
 <!ENTITY min "7.3.2">
-<!ENTITY package "homenas.dashboard-0.1.8-x86_64-1.txz">
-<!ENTITY package_basename "homenas.dashboard-0.1.8-x86_64-1">
-<!ENTITY package_url "https://github.com/heijer74/HomeNas-Unraid-Plugin/releases/download/homenas.dashboard-v0.1.8/homenas.dashboard-0.1.8-x86_64-1.txz">
-<!ENTITY plugin_url "https://github.com/heijer74/HomeNas-Unraid-Plugin/releases/download/homenas.dashboard-v0.1.8/homenas.dashboard.plg">
+<!ENTITY package "homenas.dashboard-0.1.9-x86_64-1.txz">
+<!ENTITY package_basename "homenas.dashboard-0.1.9-x86_64-1">
+<!ENTITY package_url "https://github.com/heijer74/HomeNas-Unraid-Plugin/releases/download/homenas.dashboard-v0.1.9/homenas.dashboard-0.1.9-x86_64-1.txz">
+<!ENTITY plugin_url "https://github.com/heijer74/HomeNas-Unraid-Plugin/releases/download/homenas.dashboard-v0.1.9/homenas.dashboard.plg">
 <!ENTITY md5 "6cf41c312df3cfad316cc3f0e572c717">
 <!ENTITY sha256 "0bf9e75addcace53321b66f9e28af13154ff8ecc0a4d729dc82a4034d7e3ac4d">
 ]>
@@ -25,25 +25,25 @@
   <FILE Run="/bin/bash">
     <INLINE><![CDATA[
 set -euo pipefail
-package="/boot/config/plugins/&name;/&package;"
-expected_sha256="&sha256;"
+package="/boot/config/plugins/homenas.dashboard/homenas.dashboard-0.1.9-x86_64-1.txz"
+expected_sha256="0bf9e75addcace53321b66f9e28af13154ff8ecc0a4d729dc82a4034d7e3ac4d"
 actual_sha256=$(sha256sum "$package" | awk '{print $1}')
 if [[ "$actual_sha256" != "$expected_sha256" ]]; then
     echo "homenas.dashboard: SHA-256 verification failed" >&2
     exit 1
 fi
 upgradepkg --install-new --reinstall "$package"
-/usr/local/emhttp/plugins/&name;/scripts/install
+/usr/local/emhttp/plugins/homenas.dashboard/scripts/install
 ]]></INLINE>
   </FILE>
   <FILE Run="/bin/bash" Method="remove">
     <INLINE><![CDATA[
 set -euo pipefail
-runtime="/usr/local/emhttp/plugins/&name;"
+runtime="/usr/local/emhttp/plugins/homenas.dashboard"
 if [[ -x "$runtime/scripts/remove" ]]; then
     "$runtime/scripts/remove"
 fi
-removepkg "&package_basename;"
+removepkg "homenas.dashboard-0.1.9-x86_64-1"
 ]]></INLINE>
   </FILE>
 </PLUGIN>
