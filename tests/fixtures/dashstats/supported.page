@@ -1,0 +1,8 @@
+<?php
+/* DashStats fixture layout: column1 and column2 custom tile anchors. */
+?>
+<div class="dashboard">
+<?customTiles('column0');?>
+<?customTiles('column1');?>
+<?customTiles('column2');?>
+</div>

@@ -1,0 +1,13 @@
+{
+  "labels": {
+    "board.t_sensor": "10GbE",
+    "board.ext_sensor1": "Intake",
+    "board.ext_sensor2": "RAM",
+    "board.ext_sensor3": "Exhaust"
+  },
+  "case_delta": {
+    "enabled": true,
+    "intake_source": "board.ext_sensor1",
+    "exhaust_source": "board.ext_sensor3"
+  }
+}

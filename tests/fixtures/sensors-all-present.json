@@ -1,0 +1,44 @@
+{
+  "asus-ec-isa-0000": {
+    "Adapter": "ISA adapter",
+    "Chipset": {"temp1_input": 42.0},
+    "MB Temp": {"temp1_input": 31.0},
+    "VRM": {"temp1_input": 48.0},
+    "T_Sensor": {"temp1_input": 28.0},
+    "EXT_Sensor1": {"temp1_input": 21.5},
+    "EXT_Sensor2": {"temp1_input": 35.0},
+    "EXT_Sensor3": {"temp1_input": 29.0},
+    "CPU_Opt": {"fan1_input": 920},
+    "EXT_FAN1": {"fan1_input": 810},
+    "EXT_FAN2": {"fan2_input": 820},
+    "EXT_FAN3": {"fan3_input": 830}
+  },
+  "coretemp-isa-0000": {
+    "Adapter": "ISA adapter",
+    "Package id 0": {"temp1_input": 51.0},
+    "Core 0": {"temp2_input": 49.0},
+    "Core 1": {"temp3_input": 50.0}
+  },
+  "nct6798-isa-0290": {
+    "Adapter": "ISA adapter",
+    "fan1": {"fan1_input": 795},
+    "fan2": {"fan2_input": 1050},
+    "fan3": {"fan3_input": 780},
+    "fan4": {"fan4_input": 770},
+    "fan5": {"fan5_input": 760},
+    "fan6": {"fan6_input": 750},
+    "fan7": {"fan7_input": 740}
+  },
+  "nvme-pci-5d00": {
+    "Adapter": "PCI adapter",
+    "Composite": {"temp1_input": 36.25}
+  },
+  "nvme-pci-ae00": {
+    "Adapter": "PCI adapter",
+    "Composite": {"temp1_input": 39.75}
+  },
+  "acpitz-acpi-0": {
+    "Adapter": "ACPI interface",
+    "temp1": {"temp1_input": 26.0}
+  }
+}

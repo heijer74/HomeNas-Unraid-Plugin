@@ -1,0 +1,52 @@
+                <?if ($fans):?>
+                <tbody title="_(Fan Information)_">
+                    <tr>
+                        <td>
+                            <span class='tile-header'>
+                                <span class='tile-header-left'>
+                                    <i class='icon-fan f32'></i>
+                                    <div class='section'>
+                                        <h3 class='tile-header-main'>_(Airflow)_</h3>
+                                        <span>
+                                            <i class='ups fa fa-sort-amount-asc'></i>_(Fan count)_: <?=$fans?>
+                                        </span><br>
+                                    </div>
+                                </span>
+                                <?if ($autofan):?>
+                                    <span class='tile-header-right'>
+                                        <span class='tile-header-right-controls'>
+                                            <a href='/Dashboard/Settings/FanSettings' title="_(Go to fan settings)_">
+                                                <i class='fa fa-fw fa-cog control'></i>
+                                            </a>
+                                        </span>
+                                    </span>
+                                <?endif;?>
+                            </span>
+                        </td>
+                    </tr>
+                    <?
+                    $label = $value = [];
+                    $i = 0;
+                    for ($fan=0; $fan<$fans; $fan++) {
+                        if ($fan > 0 && $fan % 3 == 0) $i++;
+                        $class = $fan % 3 == 2 ? "" : " class='fan'";
+                        $label[$i][] = "<span{$class}>"._('FAN')." ".($fan+1)."</span>";
+                    }
+                    $i = 0;
+                    for ($fan=0; $fan<$fans; $fan++) {
+                        if ($fan > 0 && $fan % 3 == 0) $i++;
+                        $class = $fan % 3 == 2 ? "" : " class='fan'";
+                        $value[$i][] = "<span{$class} id='fan$fan'>--</span>";
+                    }
+                    echo "<tr><td>";
+                    for ($i = 0; $i < count($label); $i++) {
+                        foreach ($label[$i] as $data) echo $data;
+                        echo "<br>";
+                        foreach ($value[$i] as $data) echo $data;
+                        echo "<br>";
+                        if ($i < count($value)-1) echo "<br>";
+                    }
+                    echo "</td></tr>";
+                    ?>
+                </tbody>
+                <?endif;?>

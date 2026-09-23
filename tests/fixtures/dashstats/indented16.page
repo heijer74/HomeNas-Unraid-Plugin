@@ -1,0 +1,7 @@
+<?php
+/* DashStats fixture with live Unraid 7.3.2 indentation. */
+?>
+<div class="dashboard">
+                <?customTiles('column1');?>
+                <?customTiles('column2');?>
+</div>

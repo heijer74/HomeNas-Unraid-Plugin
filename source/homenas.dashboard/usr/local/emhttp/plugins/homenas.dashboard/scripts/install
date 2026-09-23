@@ -1,0 +1,20 @@
+#!/bin/bash
+set -euo pipefail
+
+# Phase B initializes only the plugin's persistent configuration with generic
+# defaults. It does not touch dashboard or hardware files.
+PLUGIN_DIR=/usr/local/emhttp/plugins/homenas.dashboard
+PHP_BIN=/usr/bin/php
+
+if [[ ! -x "$PHP_BIN" ]]; then
+    echo "homenas.dashboard: PHP runtime not found at $PHP_BIN" >&2
+    exit 1
+fi
+
+"$PHP_BIN" "$PLUGIN_DIR/include/config-store.php" init
+
+# A layout mismatch is non-fatal for installation: the adapter is fail-closed
+# and records the reason. No dashboard file is touched on that path.
+if ! "$PLUGIN_DIR/scripts/refresh-dashboard"; then
+    echo "homenas.dashboard: dashboard tile not applied; see adapter status" >&2
+fi

@@ -1,0 +1,6 @@
+<?php ?>
+<div class="dashboard">
+<?customTiles('column1');?>
+<? customTiles('column1');?>
+<?customTiles('column2');?>
+</div>

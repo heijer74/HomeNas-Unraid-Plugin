@@ -1,0 +1,11 @@
+<?php ?>
+<div class="dashboard">
+/* homenas.dashboard:temperatures:begin v1 */
+<?php require_once '/usr/local/emhttp/plugins/homenas.dashboard/include/temperature-tile.php'; ?>
+/* homenas.dashboard:temperatures:end */
+/* homenas.dashboard:temperatures:begin v1 */
+<?php require_once '/usr/local/emhttp/plugins/homenas.dashboard/include/temperature-tile.php'; ?>
+/* homenas.dashboard:temperatures:end */
+<?customTiles('column1');?>
+<?customTiles('column2');?>
+</div>

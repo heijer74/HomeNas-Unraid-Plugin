@@ -1,0 +1,16 @@
+{
+  "asus-ec-isa-0000": {
+    "Adapter": "ISA adapter",
+    "Chipset": {"temp1_input": 42.0},
+    "MB Temp": {"temp1_input": 31.0},
+    "VRM": {"temp1_input": 48.0},
+    "T_Sensor": {"temp1_input": 28.0},
+    "EXT_Sensor1": {"temp1_input": 21.5},
+    "EXT_Sensor2": {"temp1_input": 35.0},
+    "EXT_Sensor3": {"temp1_input": 29.0}
+  },
+  "coretemp-isa-0000": {
+    "Adapter": "ISA adapter",
+    "Package id 0": {"temp1_input": 51.0}
+  }
+}

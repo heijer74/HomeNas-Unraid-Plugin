@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "labels": {
+    "board.chipset": "Chipset",
+    "board.motherboard": "Motherboard",
+    "board.vrm": "VRM",
+    "board.t_sensor": "T_Sensor",
+    "storage.nvme.slot1": "NVMe 1",
+    "storage.nvme.slot2": "NVMe 2",
+    "board.ext_sensor1": "EXT_Sensor1",
+    "board.ext_sensor2": "EXT_Sensor2",
+    "board.ext_sensor3": "EXT_Sensor3"
+  },
+  "fan_labels": {
+    "board.nct.fan1": "CHA_FAN1",
+    "board.nct.fan2": "CPU_FAN",
+    "board.nct.fan3": "CHA_FAN2",
+    "board.nct.fan4": "CHA_FAN3",
+    "board.nct.fan5": "H_AMP",
+    "board.nct.fan6": "W_PUMP+",
+    "board.nct.fan7": "AIO_PUMP",
+    "board.cpu_opt_fan": "CPU_OPT",
+    "board.ext_fan1": "EXT_FAN1",
+    "board.ext_fan2": "EXT_FAN2",
+    "board.ext_fan3": "EXT_FAN3"
+  },
+  "case_delta": {
+    "enabled": false,
+    "intake_source": "board.ext_sensor1",
+    "exhaust_source": "board.ext_sensor3"
+  },
+  "nvme_slots": {
+    "storage.nvme.slot1": {"serial": null, "model": null},
+    "storage.nvme.slot2": {"serial": null, "model": null}
+  }
+}

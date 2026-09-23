@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euo pipefail
+
+# Preserve /boot/config/plugins/homenas.dashboard, including user settings.
+# An unrecognised own marker must abort uninstall before removepkg removes the
+# renderer that the still-active dashboard page requires.
+PLUGIN_DIR=/usr/local/emhttp/plugins/homenas.dashboard
+/usr/bin/php "$PLUGIN_DIR/scripts/airflow-overlay.php" remove
+"$PLUGIN_DIR/scripts/dashboard-overlay" remove

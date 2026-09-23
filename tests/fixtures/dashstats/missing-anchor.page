@@ -1,0 +1,5 @@
+<?php /* missing column1 fixture */ ?>
+<div class="dashboard">
+<?customTiles('column0');?>
+<?customTiles('column2');?>
+</div>

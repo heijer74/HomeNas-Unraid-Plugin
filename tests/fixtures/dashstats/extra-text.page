@@ -1,0 +1,5 @@
+<?php ?>
+<div class="dashboard">
+  <?customTiles('column1');?> <!-- extra content -->
+  <?customTiles('column2');?>
+</div>

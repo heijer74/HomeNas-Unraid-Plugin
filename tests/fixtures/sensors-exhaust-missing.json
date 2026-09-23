@@ -1,0 +1,7 @@
+{
+  "asus-ec-isa-0000": {
+    "Adapter": "ISA adapter",
+    "EXT_Sensor1": {"temp1_input": 21.5},
+    "EXT_Sensor2": {"temp1_input": 35.0}
+  }
+}

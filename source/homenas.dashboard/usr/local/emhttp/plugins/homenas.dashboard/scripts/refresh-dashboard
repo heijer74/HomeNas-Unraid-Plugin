@@ -1,0 +1,13 @@
+#!/bin/bash
+set -euo pipefail
+
+PLUGIN_DIR=/usr/local/emhttp/plugins/homenas.dashboard
+
+temperature_ok=0
+airflow_ok=0
+"$PLUGIN_DIR/scripts/dashboard-overlay" apply || temperature_ok=$?
+/usr/bin/php "$PLUGIN_DIR/scripts/airflow-overlay.php" apply || airflow_ok=$?
+if [[ "$temperature_ok" -ne 0 || "$airflow_ok" -ne 0 ]]; then
+    echo "homenas.dashboard: one or more dashboard adapters refused the current layout" >&2
+    exit 1
+fi

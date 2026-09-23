@@ -1,0 +1,13 @@
+Menu="Utilities"
+Title="HomeNas Monitoring"
+Icon="thermometer-half"
+Tag="temperature"
+Markdown="false"
+---
+<?php
+
+require_once $docroot . '/plugins/homenas.dashboard/include/settings-page.php';
+
+$csrfToken = homenas_dashboard_unraid_csrf_token($var ?? null);
+$notice = ($_GET['saved'] ?? null) === '1' ? 'Instellingen opgeslagen.' : null;
+echo homenas_dashboard_render_settings_page(homenas_dashboard_load_config(), $csrfToken, [], $notice);

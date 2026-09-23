@@ -1,0 +1,44 @@
+.homenas-dashboard-temperature-tile .homenas-dashboard-temperature-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 0.8rem 0.6rem 1rem;
+}
+
+.homenas-dashboard-temperature-tile .homenas-dashboard-temperature-group {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 0.9rem;
+}
+
+.homenas-dashboard-temperature-tile .homenas-dashboard-temperature-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    min-width: 0;
+    text-align: center;
+}
+
+.homenas-dashboard-temperature-tile .homenas-dashboard-temperature-label,
+.homenas-dashboard-temperature-tile .homenas-dashboard-temperature-value {
+    display: block;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+.homenas-dashboard-temperature-tile .homenas-dashboard-temperature-value {
+    font-weight: 600;
+    margin-top: auto;
+}
+
+.homenas-dashboard-temperature-tile .homenas-dashboard-case-delta {
+    align-self: center;
+}
+
+@media (max-width: 480px) {
+    .homenas-dashboard-temperature-tile .homenas-dashboard-temperature-group {
+        grid-template-columns: 1fr;
+        row-gap: 0.85rem;
+    }
+}

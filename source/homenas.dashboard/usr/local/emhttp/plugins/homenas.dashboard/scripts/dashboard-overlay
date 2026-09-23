@@ -1,0 +1,283 @@
+#!/bin/bash
+set -euo pipefail
+
+PAGE=${HOMENAS_DASHBOARD_PAGE:-/usr/local/emhttp/plugins/dynamix/DashStats.page}
+LOCK_DIR=${HOMENAS_DASHBOARD_LOCK_DIR:-/var/lock/homenas.dashboard-overlay.lock}
+ANCHOR_COLUMN1="<?customTiles('column1');?>"
+ANCHOR_COLUMN2="<?customTiles('column2');?>"
+BEGIN_MARKER='/* homenas.dashboard:temperatures:begin v1 */'
+END_MARKER='/* homenas.dashboard:temperatures:end */'
+
+log() {
+    printf 'homenas.dashboard: %s\n' "$*" >&2
+    if [ "${HOMENAS_DASHBOARD_NO_LOGGER:-0}" != "1" ] && command -v logger >/dev/null 2>&1; then
+        logger -t homenas.dashboard -- "$*"
+    fi
+}
+
+current_block() {
+    cat <<'EOF'
+/* homenas.dashboard:temperatures:begin v1 */
+<?php require_once '/usr/local/emhttp/plugins/homenas.dashboard/include/temperature-tile.php'; ?>
+/* homenas.dashboard:temperatures:end */
+EOF
+}
+
+legacy_block() {
+    cat <<'EOF'
+/* homenas.dashboard:temperatures:begin v0 */
+<?php require_once '/usr/local/emhttp/plugins/homenas.dashboard/include/temperature-tile.php'; ?>
+/* homenas.dashboard:temperatures:end */
+EOF
+}
+
+count_line() {
+    grep -Fxc "$1" "$PAGE" || true
+}
+
+marker_counts_valid() {
+    local begins ends raw_begins raw_ends
+    begins=$(grep -Ec '^/\* homenas\.dashboard:temperatures:begin v[0-9]+ \*/$' "$PAGE" || true)
+    ends=$(count_line "$END_MARKER")
+    raw_begins=$(grep -Fc 'homenas.dashboard:temperatures:begin' "$PAGE" || true)
+    raw_ends=$(grep -Fc 'homenas.dashboard:temperatures:end' "$PAGE" || true)
+    [ "$raw_begins" -eq "$begins" ] && [ "$raw_ends" -eq "$ends" ] &&
+        [ "$begins" -eq "$ends" ] && [ "$begins" -le 1 ]
+}
+
+extract_block() {
+    awk -v begin="$1" -v end="$END_MARKER" '
+        $0 == begin { inside = 1 }
+        inside { print }
+        $0 == end && inside { exit }
+    ' "$PAGE"
+}
+
+known_marker_block() {
+    local block_file expected begin result
+    block_file=$(mktemp "${TMPDIR:-/tmp}/homenas-dashboard-block.XXXXXX")
+    begin=$(grep -E '^/\* homenas\.dashboard:temperatures:begin v[0-9]+ \*/$' "$PAGE" || true)
+    if [ "$(printf '%s\n' "$begin" | wc -l | tr -d ' ')" -ne 1 ]; then
+        rm -f "$block_file"
+        return 1
+    fi
+    extract_block "$begin" > "$block_file"
+    expected=$(mktemp "${TMPDIR:-/tmp}/homenas-dashboard-expected.XXXXXX")
+    current_block > "$expected"
+    if cmp -s "$block_file" "$expected"; then
+        result=0
+    else
+        legacy_block > "$expected"
+        if cmp -s "$block_file" "$expected"; then
+            result=0
+        else
+            result=1
+        fi
+    fi
+    rm -f "$block_file" "$expected"
+    return "$result"
+}
+
+supported_layout() {
+    local layout_page=${1:-$PAGE}
+    awk -v anchor1="$ANCHOR_COLUMN1" -v anchor2="$ANCHOR_COLUMN2" '
+        function is_anchor(line, anchor, trimmed) {
+            trimmed = line
+            sub(/^[ \t]*/, "", trimmed)
+            sub(/[ \t]*$/, "", trimmed)
+            return trimmed == anchor
+        }
+        {
+            if ($0 ~ /customTiles[ \t]*\(/ && index($0, "column1")) {
+                seen1++
+                if (is_anchor($0, anchor1)) valid1++
+            }
+            if ($0 ~ /customTiles[ \t]*\(/ && index($0, "column2")) {
+                seen2++
+                if (is_anchor($0, anchor2)) valid2++
+            }
+        }
+        END { exit !(seen1 == 1 && valid1 == 1 && seen2 == 1 && valid2 == 1) }
+    ' "$layout_page"
+}
+
+has_final_newline() {
+    [ "$(tail -c 1 "$1" | od -An -tu1 | tr -d '[:space:]')" = 10 ]
+}
+
+status() {
+    if [ ! -r "$PAGE" ]; then
+        printf 'unavailable\n'
+        return 1
+    fi
+    if ! marker_counts_valid; then
+        printf 'broken-marker\n'
+        return 1
+    fi
+    local marker_count
+    marker_count=$(grep -Ec '^/\* homenas\.dashboard:temperatures:begin v[0-9]+ \*/$' "$PAGE" || true)
+    if [ "$marker_count" -eq 1 ]; then
+        if known_marker_block && supported_layout; then
+            printf 'active\n'
+            return 0
+        fi
+        printf 'verification-failed\n'
+        return 1
+    fi
+    if supported_layout; then
+        printf 'disabled\n'
+        return 0
+    fi
+    printf 'unsupported-layout\n'
+    return 1
+}
+
+remove_marker_block() {
+    local destination=$1 final_newline=0
+    if has_final_newline "$PAGE"; then final_newline=1; fi
+    awk -v begin_prefix='/* homenas.dashboard:temperatures:begin v' -v end="$END_MARKER" -v final_newline="$final_newline" '
+        function output(line) {
+            if (written) printf "\n"
+            printf "%s", line
+            written = 1
+            last_written_nr = NR
+        }
+        index($0, begin_prefix) == 1 { skipping = 1; next }
+        skipping && $0 == end { skipping = 0; next }
+        !skipping { output($0) }
+        END { if (written && (last_written_nr < NR || final_newline)) printf "\n" }
+    ' "$PAGE" > "$destination"
+}
+
+replace_page() {
+    local candidate=$1 mode
+    if ! mode=$(stat -c '%a' "$PAGE" 2>/dev/null); then
+        mode=$(stat -f '%Lp' "$PAGE")
+    fi
+    chmod "$mode" "$candidate"
+    mv -f "$candidate" "$PAGE"
+}
+
+with_lock() {
+    if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+        log "adapter busy or lock path unavailable"
+        return 1
+    fi
+    trap 'rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
+    "$@"
+}
+
+apply_locked() {
+    if ! marker_counts_valid; then
+        log "apply aborted: broken or duplicate HomeNas markers"
+        return 1
+    fi
+    if ! supported_layout; then
+        log "apply aborted: unsupported DashStats layout"
+        return 1
+    fi
+
+    local marker_count
+    marker_count=$(grep -Ec '^/\* homenas\.dashboard:temperatures:begin v[0-9]+ \*/$' "$PAGE" || true)
+    if [ "$marker_count" -eq 1 ] && known_marker_block; then
+        local existing expected
+        existing=$(mktemp "${TMPDIR:-/tmp}/homenas-dashboard-existing.XXXXXX")
+        expected=$(mktemp "${TMPDIR:-/tmp}/homenas-dashboard-current.XXXXXX")
+        extract_block "$(grep -E '^/\* homenas\.dashboard:temperatures:begin v[0-9]+ \*/$' "$PAGE")" > "$existing"
+        current_block > "$expected"
+        if cmp -s "$existing" "$expected"; then
+            rm -f "$existing" "$expected"
+            log "tile already active"
+            return 0
+        fi
+        rm -f "$existing" "$expected"
+    elif [ "$marker_count" -eq 1 ]; then
+        log "apply aborted: unrecognised HomeNas marker block"
+        return 1
+    fi
+
+    local base candidate block
+    base=$(mktemp "${TMPDIR:-/tmp}/homenas-dashboard-base.XXXXXX")
+    candidate=$(mktemp "$(dirname "$PAGE")/.DashStats.homenas.XXXXXX")
+    block=$(mktemp "${TMPDIR:-/tmp}/homenas-dashboard-current.XXXXXX")
+    if [ "$marker_count" -eq 1 ]; then
+        remove_marker_block "$base"
+    else
+        cp "$PAGE" "$base"
+    fi
+    current_block > "$block"
+    local final_newline=0
+    if has_final_newline "$base"; then final_newline=1; fi
+    awk -v anchor="$ANCHOR_COLUMN1" -v block="$block" -v final_newline="$final_newline" '
+        function output(line) {
+            if (written) printf "\n"
+            printf "%s", line
+            written = 1
+        }
+        function is_anchor(line, trimmed) {
+            trimmed = line
+            sub(/^[ \t]*/, "", trimmed)
+            sub(/[ \t]*$/, "", trimmed)
+            return trimmed == anchor
+        }
+        is_anchor($0) {
+            while ((getline line < block) > 0) output(line)
+            close(block)
+        }
+        { output($0) }
+        END { if (written && final_newline) printf "\n" }
+    ' "$base" > "$candidate"
+
+    local begin_count end_count
+    begin_count=$(grep -Fxc "$BEGIN_MARKER" "$candidate" || true)
+    end_count=$(grep -Fxc "$END_MARKER" "$candidate" || true)
+    if [ "$begin_count" -ne 1 ] || [ "$end_count" -ne 1 ] || ! supported_layout "$candidate"; then
+        rm -f "$base" "$candidate" "$block"
+        log "apply aborted: generated page did not verify"
+        return 1
+    fi
+    replace_page "$candidate"
+    rm -f "$base" "$block"
+    log "tile applied"
+}
+
+remove_locked() {
+    if ! marker_counts_valid; then
+        log "remove aborted: broken or duplicate HomeNas markers"
+        return 1
+    fi
+    local marker_count
+    marker_count=$(grep -Ec '^/\* homenas\.dashboard:temperatures:begin v[0-9]+ \*/$' "$PAGE" || true)
+    if [ "$marker_count" -eq 0 ]; then
+        log "tile not present"
+        return 0
+    fi
+    if ! known_marker_block; then
+        log "remove aborted: unrecognised HomeNas marker block"
+        return 1
+    fi
+    local candidate
+    candidate=$(mktemp "$(dirname "$PAGE")/.DashStats.homenas.XXXXXX")
+    remove_marker_block "$candidate"
+    if grep -Fq "$BEGIN_MARKER" "$candidate" || grep -Fq "$END_MARKER" "$candidate"; then
+        rm -f "$candidate"
+        log "remove aborted: generated page still contains markers"
+        return 1
+    fi
+    replace_page "$candidate"
+    log "tile removed"
+}
+
+command=${1:-status}
+case "$command" in
+    status) status ;;
+    apply)
+        [ -r "$PAGE" ] || { log "apply aborted: DashStats page unavailable"; exit 1; }
+        with_lock apply_locked
+        ;;
+    remove)
+        [ -r "$PAGE" ] || { log "remove aborted: DashStats page unavailable"; exit 1; }
+        with_lock remove_locked
+        ;;
+    *) printf 'usage: dashboard-overlay {status|apply|remove}\n' >&2; exit 64 ;;
+esac

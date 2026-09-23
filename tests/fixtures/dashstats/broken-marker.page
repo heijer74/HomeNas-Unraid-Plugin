@@ -1,0 +1,6 @@
+<?php ?>
+<div class="dashboard">
+/* homenas.dashboard:temperatures:begin v1 */ extra
+<?customTiles('column1');?>
+<?customTiles('column2');?>
+</div>

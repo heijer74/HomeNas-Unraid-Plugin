@@ -1,0 +1,49 @@
+<?xml version="1.0" standalone="yes"?>
+<!DOCTYPE PLUGIN [
+<!ENTITY name "@PLUGIN_NAME@">
+<!ENTITY author "@PLUGIN_AUTHOR@">
+<!ENTITY version "@PLUGIN_VERSION@">
+<!ENTITY min "@MIN_UNRAID_VERSION@">
+<!ENTITY package "@PACKAGE_NAME@">
+<!ENTITY package_basename "@PACKAGE_BASENAME@">
+<!ENTITY package_url "@PACKAGE_URL@">
+<!ENTITY plugin_url "@PLUGIN_URL@">
+<!ENTITY md5 "@MD5@">
+<!ENTITY sha256 "@SHA256@">
+]>
+<PLUGIN name="&name;" author="&author;" version="&version;" pluginURL="&plugin_url;" min="&min;">
+  <CHANGES>
+### &version;
+- Plugin-beheerde Airflow-tegel met elf read-only RPM-kanalen en configureerbare fanlabels.
+- Fail-closed Unraid 7.3.2-adapter; Temperatures blijft ongewijzigd.
+  </CHANGES>
+  <FILE Name="/boot/config/plugins/&name;/&package;">
+    <URL>&package_url;</URL>
+    <MD5>&md5;</MD5>
+    <SHA256>&sha256;</SHA256>
+  </FILE>
+  <FILE Run="/bin/bash">
+    <INLINE><![CDATA[
+set -euo pipefail
+package="/boot/config/plugins/&name;/&package;"
+expected_sha256="&sha256;"
+actual_sha256=$(sha256sum "$package" | awk '{print $1}')
+if [[ "$actual_sha256" != "$expected_sha256" ]]; then
+    echo "homenas.dashboard: SHA-256 verification failed" >&2
+    exit 1
+fi
+upgradepkg --install-new --reinstall "$package"
+/usr/local/emhttp/plugins/&name;/scripts/install
+]]></INLINE>
+  </FILE>
+  <FILE Run="/bin/bash" Method="remove">
+    <INLINE><![CDATA[
+set -euo pipefail
+runtime="/usr/local/emhttp/plugins/&name;"
+if [[ -x "$runtime/scripts/remove" ]]; then
+    "$runtime/scripts/remove"
+fi
+removepkg "&package_basename;"
+]]></INLINE>
+  </FILE>
+</PLUGIN>

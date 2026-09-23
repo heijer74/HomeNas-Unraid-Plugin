@@ -1,0 +1,4 @@
+<?php /* unrecognised fixture layout */ ?>
+<main>
+<?customTiles('column1');?>
+</main>
